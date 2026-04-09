@@ -32,7 +32,7 @@ public class RetryInterceptor implements Interceptor {
           return response;
         }
       } catch (IOException e) {
-        if (!isRetryableException(e) || tryCount == config.getMaxRetries()) {
+        if (!config.getExceptionsToRetry().contains(e.getClass()) || tryCount == config.getMaxRetries()) {
           throw e;
         }
       }
@@ -50,11 +50,6 @@ public class RetryInterceptor implements Interceptor {
 
     return response;
   }
-
-  private boolean isRetryableException(IOException e) {
-    return config.getExceptionsToRetry().stream().anyMatch(retryableException -> retryableException.isInstance(e));
-  }
-
   private int calculateDelay(int tryCount) {
     final int delay = (int) (config.getInitialDelay() * Math.pow(config.getBackoffFactor(), tryCount - 1));
     return Math.min(delay, config.getMaxDelay());
