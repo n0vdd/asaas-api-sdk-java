@@ -6,8 +6,6 @@ import com.asaas.apisdk.config.AsaasSdkConfig;
 import com.asaas.apisdk.exceptions.ApiError;
 import com.asaas.apisdk.http.Environment;
 import com.asaas.apisdk.http.ModelConverter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.SocketTimeoutException;
@@ -82,6 +80,12 @@ public class BaseService {
     return message;
   }
 
+  private ApiError buildGenericApiError(Response response) {
+    ApiError error = new ApiError(extractErrorMessage(response, null), response.code(), response);
+    response.close();
+    return error;
+  }
+
   protected Response execute(Request request) throws ApiError {
     Response response;
     try {
@@ -128,7 +132,7 @@ public class BaseService {
     }
 
     // If no specific error model is mapped or conversion failed, throw generic ApiError
-    throw new ApiError(extractErrorMessage(response, null), response.code(), response);
+    throw buildGenericApiError(response);
   }
 
   protected CompletableFuture<Response> executeAsync(Request request) {
@@ -167,7 +171,7 @@ public class BaseService {
               }
 
               // If no specific error model is mapped or conversion failed, throw generic ApiError
-              ApiError error = new ApiError(extractErrorMessage(response, null), response.code(), response);
+              ApiError error = buildGenericApiError(response);
               future.completeExceptionally(error);
               return;
             }
