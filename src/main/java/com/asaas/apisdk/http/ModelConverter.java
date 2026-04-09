@@ -77,9 +77,6 @@ public final class ModelConverter {
 
   public static byte[] readBytes(Response response) {
     try {
-      if (response.body() == null) {
-        throw new IllegalStateException("Response body is empty");
-      }
       return response.body().bytes();
     } catch (Exception e) {
       e.printStackTrace();
@@ -95,5 +92,4 @@ public final class ModelConverter {
       return null;
     }
   }
-
 }
