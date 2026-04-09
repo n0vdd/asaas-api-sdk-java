@@ -2,13 +2,13 @@
 
 package com.asaas.apisdk.http;
 
-import com.asaas.apisdk.exceptions.ApiError;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 
 public final class ModelConverter {
@@ -30,10 +30,12 @@ public final class ModelConverter {
   private ModelConverter() {}
 
   public static <T> T convert(final Response response, final Class<T> clazz) {
+    final ResponseBody body = response.body();
     try {
-      return mapper.readValue(readBodyAsString(response), clazz);
+      return mapper.readValue(body.string(), clazz);
     } catch (Exception e) {
-      throw buildConversionApiError(response, String.format("deserialize response body to %s", clazz.getSimpleName()), e);
+      e.printStackTrace();
+      return null;
     }
   }
 
@@ -48,9 +50,10 @@ public final class ModelConverter {
 
   public static <T> T convert(Response response, TypeReference<T> typeReference) {
     try {
-      return mapper.readValue(readBodyAsString(response), typeReference);
+      return convert(response.body().string(), typeReference);
     } catch (Exception e) {
-      throw buildConversionApiError(response, "deserialize response body", e);
+      e.printStackTrace();
+      return null;
     }
   }
 
@@ -65,9 +68,10 @@ public final class ModelConverter {
 
   public static String readString(Response response) {
     try {
-      return readBodyAsString(response);
+      return response.body().string();
     } catch (Exception e) {
-      throw buildConversionApiError(response, "read response body as string", e);
+      e.printStackTrace();
+      return null;
     }
   }
 
@@ -78,7 +82,8 @@ public final class ModelConverter {
       }
       return response.body().bytes();
     } catch (Exception e) {
-      throw buildConversionApiError(response, "read response body as bytes", e);
+      e.printStackTrace();
+      return null;
     }
   }
 
@@ -91,22 +96,4 @@ public final class ModelConverter {
     }
   }
 
-  private static String readBodyAsString(Response response) throws Exception {
-    if (response.body() == null) {
-      throw new IllegalStateException("Response body is empty");
-    }
-
-    return response.body().string();
-  }
-
-  private static ApiError buildConversionApiError(Response response, String action, Exception cause) {
-    int status = response != null ? response.code() : 0;
-    String url = response != null && response.request() != null ? response.request().url().toString() : "unknown";
-
-    String message = String.format("Failed to %s (status: %d, url: %s)", action, status, url);
-    // TODO: Consider a dedicated response-conversion exception type for malformed 2xx payloads.
-    ApiError error = new ApiError(message, status, response);
-    error.initCause(cause);
-    return error;
-  }
 }
