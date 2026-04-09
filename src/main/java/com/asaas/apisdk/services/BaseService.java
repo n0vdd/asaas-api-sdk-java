@@ -81,9 +81,7 @@ public class BaseService {
   }
 
   private ApiError buildGenericApiError(Response response) {
-    ApiError error = new ApiError(extractErrorMessage(response, null), response.code(), response);
-    response.close();
-    return error;
+    return new ApiError(extractErrorMessage(response, null), response.code(), response);
   }
 
   protected Response execute(Request request) throws ApiError {
